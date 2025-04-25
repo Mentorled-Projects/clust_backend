@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from pydantic import BaseSettings, AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, validator
+from pydantic_settings import BaseSettings
 from typing import List, Optional
 
 load_dotenv()
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = ENVIRONMENT == "development"
 
-    PROJECT_NAME: str = "Clust"
+    PROJECT_NAME: str = "Clust API"
     VERSION: str = "1.0.0"
 
     DATABASE_URL: str = os.getenv("DATABASE_URL")
