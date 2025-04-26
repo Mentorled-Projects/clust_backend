@@ -13,7 +13,20 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Clust API"
     VERSION: str = "1.0.0"
 
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    # Database settings
+    POSTGRES_SERVER: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+    POSTGRES_PORT: str = "5432"
+
+    SQLALCHEMY_DATABASE_URI: str = ""
+
+    class Config:
+        env_file = ".env"
+
+    def assemble_db_connection(self) -> str:
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = "HS256"
@@ -37,3 +50,4 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 settings = Settings()
+settings.SQLALCHEMY_DATABASE_URI = settings.assemble_db_connection()
