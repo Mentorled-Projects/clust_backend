@@ -1,21 +1,25 @@
-import uuid
-from sqlalchemy import Column, String, Enum, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from datetime import datetime
+from sqlalchemy import Column, String, Enum
 import enum
+from sqlalchemy.orm import relationship
 
-from core.base_class import Base
+
+from api.v1.models.base_class import BaseModel 
 
 class UserRole(str, enum.Enum):
     organizer = "organizer"
     attendee = "attendee"
 
-class User(Base):
+class User(BaseModel):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
     password_hash = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+    events = relationship("Event", back_populates="organizer")
+    rsvps = relationship("RSVP", back_populates="user")
+    groups = relationship("Group", back_populates="organizer")
+    feedbacks = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
+    uploaded_files = relationship("File", back_populates="uploader", cascade="all, delete-orphan")

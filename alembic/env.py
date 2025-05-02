@@ -6,6 +6,11 @@ from alembic import context
 
 from core.config.settings import settings
 from api.db.base import Base
+from api.v1.models import user, event, group, rsvp, file, feedback
+from api.v1.models.base_class import Base 
+
+target_metadata = Base.metadata
+
 
 config = context.config
 fileConfig(config.config_file_name)
