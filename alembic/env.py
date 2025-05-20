@@ -8,6 +8,14 @@ from core.config.settings import settings
 from api.db.base import Base
 from api.v1.models import user, event, group, rsvp, file, feedback
 from api.v1.models.base_class import Base 
+import os
+from dotenv import load_dotenv
+
+# Load .env from the project root
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+# Debug print to confirm env variables are loaded
+print("POSTGRES_SERVER:", os.getenv("POSTGRES_SERVER"))
 
 target_metadata = Base.metadata
 

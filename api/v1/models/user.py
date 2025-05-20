@@ -23,3 +23,7 @@ class User(BaseModel):
     groups = relationship("Group", back_populates="organizer")
     feedbacks = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
     uploaded_files = relationship("File", back_populates="uploader", cascade="all, delete-orphan")
+
+
+
+fake_user_db = {}
