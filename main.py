@@ -19,7 +19,6 @@ app.add_middleware(
 
 app.include_router(api_version_one)
 
-# Healthcheck endpoint
 @app.get("/healthcheck")
 def healthcheck():
     return {"status": "ok"}

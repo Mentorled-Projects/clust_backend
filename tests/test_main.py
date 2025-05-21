@@ -18,9 +18,8 @@ def test_cors_headers():
     assert response.headers["access-control-allow-origin"] == "http://example.com" or response.headers["access-control-allow-origin"] == "*"
 
 def test_included_routes():
-    # The /user/signup route is under /api/v1 prefix
     response = client.post("/api/v1/user/signup", json={
         "email": "testmain@example.com",
         "password": "password123"
     })
-    assert response.status_code in [200, 400]  # 200 if new user, 400 if duplicate
+    assert response.status_code in [200, 400]

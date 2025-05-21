@@ -15,3 +15,4 @@ class Event(BaseModel):
     organizer = relationship("User", back_populates="events")
     feedbacks = relationship("Feedback", back_populates="event", cascade="all, delete-orphan")
     files = relationship("File", back_populates="event", cascade="all, delete-orphan")
+    rsvps = relationship("RSVP", back_populates="event", cascade="all, delete-orphan")

@@ -22,24 +22,25 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
-    VERIFICATION_BASE_URL: str = "http://localhost:8000"
-
     SMTP_SERVER: Optional[str] = None
     SMTP_PORT: Optional[int] = None
     EMAILS_FROM_EMAIL: Optional[str] = None
 
-    EMAIL_HOST: Optional[str] = None
-    MAIL_PORT: Optional[int] = None
     MAIL_USERNAME: Optional[str] = None
     MAIL_PASSWORD: Optional[str] = None
+
+    MAIL_FROM: Optional[str] = None
     MAIL_FROM_NAME: Optional[str] = None
 
+    VERIFICATION_BASE_URL: Optional[str] = None
+    
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file="/home/codenamemomi/projects/clust_backend/.env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
     )
+
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):

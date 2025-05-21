@@ -1,3 +1,11 @@
-import secrets
+import smtplib
 
-print(secrets.token_urlsafe(16))
+server = smtplib.SMTP("smtp.gmail.com", 587)
+server.starttls()
+server.login("akinrogundep0@gmail.com", "jpko lhpo nvzi nlpl")
+server.sendmail(
+    "CLUST",
+    "akinrogundecodenamemomi@gmail.com",
+    "Subject: Test\n\nThis is a test email."
+)
+server.quit()

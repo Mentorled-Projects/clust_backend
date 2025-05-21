@@ -1,6 +1,8 @@
-from sqlalchemy import Column, String, Enum
+from sqlalchemy import Column, String, Enum, Boolean
 import enum
 from sqlalchemy.orm import relationship
+from api.v1 import models
+
 
 
 from api.v1.models.base_class import BaseModel 
@@ -16,6 +18,8 @@ class User(BaseModel):
     email = Column(String, nullable=False, unique=True)
     password_hash = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False)
+    is_verified = Column(Boolean, default=False)
+    
 
 
     events = relationship("Event", back_populates="organizer")
