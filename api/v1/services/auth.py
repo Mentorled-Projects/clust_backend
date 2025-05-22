@@ -1,26 +1,56 @@
+from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 from typing import Optional
+import redis.asyncio as redis
+import datetime
+import logging
 
+from api.db.session import get_db
 from api.v1.models.user import User
+from fastapi import HTTPException, status
+from jose import JWTError, jwt
+from core.config.settings import settings
+from api.utils.token import oauth2_scheme
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+r = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
+logger = logging.getLogger(__name__)
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
-
 
 async def get_user_by_email(email: str, db: AsyncSession):
     stmt = select(User).where(User.email == email)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    if await is_token_blacklisted(token):
+        raise HTTPException(status_code=401, detail="Token has been revoked")
+    
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate token")
+
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
 
 async def create_user(email: str, hashed_password: str, db: AsyncSession, name: Optional[str] = "") -> User:
     result = await db.execute(select(User).where(User.email == email))
@@ -41,7 +71,6 @@ async def create_user(email: str, hashed_password: str, db: AsyncSession, name: 
     await db.refresh(new_user)
     return new_user
 
-
 async def verify_user_email(email: str, db: AsyncSession):
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
@@ -53,3 +82,17 @@ async def verify_user_email(email: str, db: AsyncSession):
     await db.commit()
     await db.refresh(user)
     return user
+
+async def blacklist_token(token: str):
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        exp = payload.get("exp")
+        if exp:
+            ttl = int(exp - datetime.utcnow().timestamp())
+            await r.setex(token, ttl, "blacklisted")
+    except Exception:
+        pass
+
+async def is_token_blacklisted(token: str) -> bool:
+    result = await r.get(token)
+    return result == "blacklisted"

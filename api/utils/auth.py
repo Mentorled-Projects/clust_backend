@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 
 pwd= CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 def hash_passsword(password:str) -> str:
     return pwd.hash(password)
 

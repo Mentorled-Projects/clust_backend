@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends, APIRouter
+from fastapi import FastAPI, HTTPException, Depends, APIRouter, Request, status
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from sqlalchemy import select
+
 
 from core.config.settings import settings
 from api.utils import email_utils
@@ -11,12 +12,11 @@ from api.v1.services import auth as user_service
 from api.db.session import get_db
 from api.utils.auth import hash_passsword, validate_password, verify_password, validate_email_format, create_access_token
 from api.v1.models.user import User
-
-user = APIRouter(prefix="/user", tags=["User"])
-serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+from api.utils.token import oauth2_scheme
 
 user = APIRouter(prefix="/user", tags=["Auth"])
 serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+
 
 @user.post("/signup", response_model=UserResponse)
 async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -87,3 +87,8 @@ async def login(user_data: LoginRequest, db: Session = Depends(get_db)):
 
     # TODO: generate and return token or session
     return {"message": "Login successful"}
+
+@user.post("/logout")
+async def logout(token: str = Depends(oauth2_scheme)):
+    await user_service.blacklist_token(token)
+    return {"detail": "Logged out successfully"}
