@@ -1,3 +1,4 @@
+from uuid import UUID
 from pydantic import BaseModel, EmailStr
 
 
@@ -6,10 +7,11 @@ class UserCreate(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
-    id: int
+    id: UUID
     email: EmailStr
     is_verified: bool
-    name: str | None = None
+    role: str
+    name: str
 
     class Config:
         orm_mode = True

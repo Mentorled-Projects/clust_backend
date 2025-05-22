@@ -85,8 +85,27 @@ async def login(user_data: LoginRequest, db: Session = Depends(get_db)):
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="Please verify your email before logging in")
 
-    # TODO: generate and return token or session
-    return {"message": "Login successful"}
+    access_token = create_access_token(data={"sub": str(user.id)})
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "Login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": str(user.id),
+                "name": user.name,
+                "email": user.email,
+                "role": user.role,
+                "is_verified": user.is_verified
+            }
+        }
+    )
+
+@user.get("/me", response_model=UserResponse)
+async def get_user_info(current_user: User = Depends(user_service.get_current_user)):
+    return current_user
 
 @user.post("/logout")
 async def logout(token: str = Depends(oauth2_scheme)):

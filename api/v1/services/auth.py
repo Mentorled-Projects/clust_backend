@@ -16,7 +16,7 @@ from api.utils.token import oauth2_scheme
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-r = redis.Redis(host="localhost", port=6379, decode_responses=True)
+r = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +89,10 @@ async def blacklist_token(token: str):
         exp = payload.get("exp")
         if exp:
             ttl = int(exp - datetime.utcnow().timestamp())
-            await r.setex(token, ttl, "blacklisted")
-    except Exception:
-        pass
+            if ttl > 0:
+                await r.setex(token, ttl, "blacklisted")
+    except Exception as e:
+        logger.error(f"Error blacklisting token: {e}")
 
 async def is_token_blacklisted(token: str) -> bool:
     result = await r.get(token)
