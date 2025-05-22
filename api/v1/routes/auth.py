@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, APIRouter, Request, status
+from fastapi import FastAPI, HTTPException, Depends, APIRouter, Request, status, Cookie, Response
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -14,11 +14,11 @@ from api.utils.auth import hash_passsword, validate_password, verify_password, v
 from api.v1.models.user import User
 from api.utils.token import oauth2_scheme
 
-user = APIRouter(prefix="/user", tags=["Auth"])
+auth = APIRouter(prefix="/auth", tags=["Auth"])
 serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
 
 
-@user.post("/signup", response_model=UserResponse)
+@auth.post("/signup", response_model=UserResponse)
 async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     validate_password(user_data.password)
     validate_email_format(user_data.email)
@@ -52,7 +52,7 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
 
     return JSONResponse(status_code=200, content={"message": "Verification email sent"})
 
-@user.get("/verify/{token}")
+@auth.get("/verify/{token}")
 async def verify_email(token: str, db: Session = Depends(get_db)):
     try:
         email = serializer.loads(token, max_age=3600)
@@ -70,8 +70,8 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     return JSONResponse(status_code=200, content={"message": "Email verified successfully"})
 
 
-@user.post("/login")
-async def login(user_data: LoginRequest, db: Session = Depends(get_db)):
+@auth.post("/login")
+async def login(response: Response, user_data: LoginRequest, db: Session = Depends(get_db)):
     stmt = select(User).where(User.email == user_data.email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -87,7 +87,9 @@ async def login(user_data: LoginRequest, db: Session = Depends(get_db)):
 
     access_token = create_access_token(data={"sub": str(user.id)})
 
-    return JSONResponse(
+    
+
+    response = JSONResponse(
         status_code=200,
         content={
             "message": "Login successful",
@@ -102,12 +104,23 @@ async def login(user_data: LoginRequest, db: Session = Depends(get_db)):
             }
         }
     )
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )    
+    return response
 
-@user.get("/me", response_model=UserResponse)
-async def get_user_info(current_user: User = Depends(user_service.get_current_user)):
-    return current_user
 
-@user.post("/logout")
-async def logout(token: str = Depends(oauth2_scheme)):
+@auth.post("/logout")
+async def logout(response: Response, request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="please login first")
+    
     await user_service.blacklist_token(token)
+    response.delete_cookie("access_token")
     return {"detail": "Logged out successfully"}
