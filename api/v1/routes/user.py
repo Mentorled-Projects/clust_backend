@@ -38,12 +38,12 @@ async def update_user_info(
         user.email = user_update.email
         updated = True
 
-    if user_update.name is not None:
-        user.name = user_update.name
+    if user_update.first_name is not None:
+        user.first_name = user_update.first_name
         updated = True
 
-    if user_update.password is not None:
-        user.password_hash = pwd_context.hash(user_update.password)
+    if user_update.last_name is not None:
+        user.last_name = user_update.last_name
         updated = True
 
     if updated:

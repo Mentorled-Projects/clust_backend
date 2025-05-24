@@ -13,6 +13,7 @@ from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from core.config.settings import settings
 from api.utils.token import oauth2_scheme
+from api.v1.schemas.auth import UserCreate
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -57,17 +58,18 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     return user
 
-async def create_user(email: str, hashed_password: str, db: AsyncSession, name: Optional[str] = "") -> User:
-    result = await db.execute(select(User).where(User.email == email))
+async def create_user(db: AsyncSession, schemas: UserCreate) -> User:
+    result = await db.execute(select(User).where(User.email == schemas.email))
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
         raise ValueError("Email already registered")
 
     new_user = User(
-        email=email,
-        password_hash=hashed_password,
-        name=name,
+        email=schemas.email,
+        password_hash=schemas.password,
+        first_name=schemas.first_name,
+        last_name=schemas.last_name,
         role="attendee",
         is_verified=False
     )

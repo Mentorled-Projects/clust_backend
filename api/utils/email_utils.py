@@ -1,7 +1,9 @@
 import smtplib
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from email.message import EmailMessage
 from core.config.settings import settings
 import traceback
+from pydantic import EmailStr
 
 def send_email_reminder(to_email: str, subject: str, content: str):
     msg = EmailMessage()

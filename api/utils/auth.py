@@ -5,6 +5,8 @@ from email_validator import validate_email, EmailNotValidError
 from jose import jwt
 from core.config.settings import settings
 from datetime import datetime, timedelta
+from api.utils.token import serializer
+
 
 pwd= CryptContext(schemes=["bcrypt"], deprecated="auto")
 

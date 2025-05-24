@@ -1,5 +1,7 @@
 from sqlalchemy import Column, String, Enum, Boolean
+from sqlalchemy.dialects.postgresql import ENUM
 import enum
+from sqlalchemy.types import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 from api.v1 import models
 
@@ -14,10 +16,11 @@ class UserRole(str, enum.Enum):
 class User(BaseModel):
     __tablename__ = "users"
 
-    name = Column(String, nullable=False)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
     password_hash = Column(String, nullable=False)
-    role = Column(Enum(UserRole), nullable=False)
+    role = Column(SQLAlchemyEnum(UserRole, native_enum=False), nullable=False)
     is_verified = Column(Boolean, default=False)
     
 

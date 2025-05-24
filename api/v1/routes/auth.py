@@ -10,12 +10,12 @@ from api.utils import email_utils
 from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token
 from api.v1.services import auth as user_service
 from api.db.session import get_db
-from api.utils.auth import hash_passsword, validate_password, verify_password, validate_email_format, create_access_token
+from api.utils.auth import create_access_token, validate_password, validate_email_format, verify_password 
 from api.v1.models.user import User
 from api.utils.token import oauth2_scheme
+from api.utils.token import serializer
 
 auth = APIRouter(prefix="/auth", tags=["Auth"])
-serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
 
 
 @auth.post("/signup", response_model=UserResponse)
@@ -26,15 +26,15 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = await user_service.get_user_by_email(user_data.email, db)
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
 
     if len(user_data.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
 
     hashed_password = user_service.hash_password(user_data.password)
+    user_data.password = hashed_password
 
     try:
-        await user_service.create_user(user_data.email, hashed_password, db)
+        await user_service.create_user(db, user_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -97,7 +97,8 @@ async def login(response: Response, user_data: LoginRequest, db: Session = Depen
             "token_type": "bearer",
             "user": {
                 "id": str(user.id),
-                "name": user.name,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
                 "email": user.email,
                 "role": user.role,
                 "is_verified": user.is_verified
