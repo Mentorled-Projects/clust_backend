@@ -1,14 +1,10 @@
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, validator
-from pydantic_settings import BaseSettings
 from typing import List, Optional
 
-load_dotenv()
-
 class Settings(BaseSettings):
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    DEBUG: bool = ENVIRONMENT == "development"
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
 
     PROJECT_NAME: str = "Clust API"
     VERSION: str = "1.0.0"
@@ -20,23 +16,31 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_PORT: str = "5432"
 
-    SQLALCHEMY_DATABASE_URI: str = ""
-
-    class Config:
-        env_file = ".env"
-
-    def assemble_db_connection(self) -> str:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-
-    SECRET_KEY: str = os.getenv("SECRET_KEY")
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
-    SMTP_SERVER: Optional[str] = os.getenv("SMTP_SERVER")
-    SMTP_PORT: Optional[int] = os.getenv("SMTP_PORT")
-    EMAILS_FROM_EMAIL: Optional[str] = os.getenv("EMAILS_FROM_EMAIL")
+    SMTP_SERVER: Optional[str] = None
+    SMTP_PORT: Optional[int] = None
+    EMAILS_FROM_EMAIL: Optional[str] = None
+
+    MAIL_USERNAME: Optional[str] = None
+    MAIL_PASSWORD: Optional[str] = None
+
+    MAIL_FROM: Optional[str] = None
+    MAIL_FROM_NAME: Optional[str] = None
+
+    VERIFICATION_BASE_URL: Optional[str] = None
+    
+
+    model_config = SettingsConfigDict(
+        env_file="/home/codenamemomi/projects/clust_backend/.env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+    )
+
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):
@@ -46,8 +50,8 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    class Config:
-        case_sensitive = True
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()
-settings.SQLALCHEMY_DATABASE_URI = settings.assemble_db_connection()

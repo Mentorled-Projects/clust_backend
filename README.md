@@ -1,0 +1,210 @@
+# Clust API
+
+Clust API is a backend service built with FastAPI that provides an event and group management platform. It supports user roles such as organizers and attendees, allowing users to create and manage groups, events, RSVPs, feedback, and file uploads.
+
+## Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/Mentorled-Projects/clust_backend
+   cd clust_backend
+   ```
+
+2. Create and activate a virtual environment:
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Set up environment variables by creating a `.env` file in the root directory. Example variables:
+
+   ```env
+   ENVIRONMENT=development
+   POSTGRES_SERVER=localhost
+   POSTGRES_USER=youruser
+   POSTGRES_PASSWORD=yourpassword
+   POSTGRES_DB=yourdb
+   SECRET_KEY=your_secret_key
+   BACKEND_CORS_ORIGINS=http://localhost,http://localhost:3000
+   VERIFICATION_BASE_URL=http://localhost:8000
+   ACCESS_TOKEN_EXPIRE_MINUTES=30
+   ALGORITHM=HS256
+   ```
+
+5. Run database migrations using Alembic:
+
+   ```bash
+   alembic upgrade head
+   ```
+
+## Usage
+
+Start the FastAPI application:
+
+```bash
+uvicorn main:app --reload
+```
+
+The API will be available at `http://localhost:8000`.
+
+## API Overview
+
+### Root Endpoint: `GET /`
+
+Returns a welcome message:
+
+```json
+{ "message": "Welcome to the Clust API!" }
+```
+
+### Healthcheck Endpoint: `GET /healthcheck`
+
+Returns the status of the API:
+
+```json
+{ "status": "ok" }
+```
+
+## Authentication
+
+The Clust API provides user authentication with email verification and JWT-based access tokens.
+
+### Signup
+
+* **Endpoint**: `POST /user/signup`
+* **Description**: Register a new user with email and password. Sends a verification email with a token link.
+* **Request Body**:
+
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "StrongP@ssw0rd!"
+  }
+  ```
+* **Password Requirements**:
+
+  * Minimum 8 characters
+  * At least one uppercase letter
+  * At least one lowercase letter
+  * At least one digit
+  * At least one special character (e.g., !@#\$%^&\*())
+* **Response**:
+
+  ```json
+  { "message": "Verification email sent" }
+  ```
+
+### Email Verification
+
+* **Endpoint**: `GET /user/verify/{token}`
+* **Description**: Verify user email by clicking the link sent to the registered email. The token expires in 1 hour.
+* **Response**:
+
+  * Success:
+
+    ```json
+    { "message": "Email verified successfully" }
+    ```
+  * Failure (expired or invalid token):
+
+    ```json
+    { "message": "Token expired" }
+    ```
+
+    or
+
+    ```json
+    { "message": "Invalid token" }
+    ```
+
+### Login
+
+* **Endpoint**: `POST /user/login`
+* **Description**: Authenticate user with email and password. Requires verified email.
+* **Request Body**:
+
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "StrongP@ssw0rd!"
+  }
+  ```
+* **Response**:
+
+  * Success:
+
+    ```json
+    { "message": "Login successful" }
+    ```
+  * Failure:
+
+    * Invalid credentials
+    * Email not verified
+
+## JWT Access Tokens
+
+* The API uses JWT tokens for authentication.
+* Tokens are created with expiration (default 30 minutes).
+* Token generation on login is planned (TODO).
+
+## Data Models
+
+### User
+
+Represents a user with roles organizer or attendee.
+
+* Fields: `name`, `email`, `password_hash`, `role`, `is_verified`
+* Relationships: organizes events and groups, RSVPs to events, provides feedback, uploads files
+
+### Group
+
+Represents a group created by an organizer.
+
+* Fields: `name`, `description`, `organizer_id`
+
+### Event
+
+Represents an event organized by a user.
+
+* Fields: `title`, `description`, `location`, `start_time`, `end_time`, `organizer_id`
+* Relationships: feedbacks and files associated with the event
+
+### RSVP
+
+Tracks user attendance status for events.
+
+### Feedback
+
+User feedback related to events.
+
+### File
+
+Files uploaded by users related to events.
+
+## Database
+
+The project uses PostgreSQL as the database backend with asynchronous support via `asyncpg`. Database schema migrations are managed using Alembic.
+
+## Configuration
+
+Configuration is managed via environment variables and the `.env` file. Key settings include:
+
+* `ENVIRONMENT`: Application environment (development, production)
+* `POSTGRES_*`: Database connection details
+* `SECRET_KEY`: Secret key for JWT and security
+* `BACKEND_CORS_ORIGINS`: Allowed CORS origins for the API
+* `VERIFICATION_BASE_URL`: Base URL used in email verification links
+* `ACCESS_TOKEN_EXPIRE_MINUTES`: JWT token expiration time in minutes
+* `ALGORITHM`: JWT signing algorithm
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.

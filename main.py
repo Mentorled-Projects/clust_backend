@@ -1,14 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routes import base
 from core.config.settings import settings
+from api.v1.routes import api_version_one
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     debug=settings.DEBUG
 )
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,10 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(base.router)
+app.include_router(api_version_one)
 
-# Healthcheck endpoint
 @app.get("/healthcheck")
 def healthcheck():
     return {"status": "ok"}
