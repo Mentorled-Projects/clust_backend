@@ -72,6 +72,30 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     return JSONResponse(status_code=200, content={"message": "Email verified successfully"})
 
 
+@auth.post("/resend-verification")
+async def resend_verification_email(email: EmailStr, db: Session = Depends(get_db)):
+    user = await user_service.get_user_by_email(email, db)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_verified:
+        return JSONResponse(status_code=200, content={"message": "Email already verified"})
+
+    token = serializer.dumps(user.email)
+    verification_link = f"{settings.VERIFICATION_BASE_URL}/user/verify/{token}"
+
+    try:
+        email_utils.send_email_reminder(
+            to_email=user.email,
+            subject="Verify your email",
+            content=f"Click the link to verify your email: {verification_link}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send verification email: {str(e)}")
+
+    return JSONResponse(status_code=200, content={"message": "Verification email resent"})
+
+
 @auth.post("/login")
 async def login(response: Response, user_data: LoginRequest, db: Session = Depends(get_db)):
     stmt = select(User).where(User.email == user_data.email)
