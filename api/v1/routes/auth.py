@@ -49,7 +49,7 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
             subject="Verify your email",
             content=f"Click the link to verify your email: {verification_link}"
         )
-    except Exception:
+    except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to send verification email")
 
     return JSONResponse(status_code=200, content={"message": "Verification email sent"})
