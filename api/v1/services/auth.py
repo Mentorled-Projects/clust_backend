@@ -6,6 +6,7 @@ from typing import Optional
 import redis.asyncio as redis
 import datetime
 import logging
+from passlib.hash import bcrypt
 
 from api.db.session import get_db
 from api.v1.models.user import User
@@ -22,10 +23,11 @@ r = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
 logger = logging.getLogger(__name__)
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hash(password)
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.verify(password, hashed)
+
 
 async def get_user_by_email(email: str, db: AsyncSession):
     stmt = select(User).where(User.email == email)
@@ -104,3 +106,22 @@ async def blacklist_token(token: str):
 async def is_token_blacklisted(token: str) -> bool:
     result = await r.get(token)
     return result == "blacklisted"
+
+async def store_token(email: str, token: str, expiry: int = 600):
+    key = f"reset_token:{token}"
+    await r.set(key, email, ex=expiry)
+
+async def verify_token(token: str) -> str | None:
+    key = f"reset_token:{token}"
+    email = await r.get(key)
+    return email if email else None
+
+async def delete_token(token: str):
+    key = f"reset_token:{token}"
+    await r.delete(key)
+
+async def update_user_password(user, new_password: str, db):
+    user.password_hash = hash_password(new_password)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)

@@ -47,3 +47,19 @@ class LogoutRequest(BaseModel):
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
+
+class PasswordResetVerify(BaseModel):
+    token: str
+    new_password: str
+    new_password_verify: str
+
+    @model_validator(mode="before")
+    def passwords_match(cls, values):
+        if values["new_password"] != values["new_password_verify"]:
+            raise ValueError("Passwords do not match")
+        return values
+    
+
+# class EmailVerificationRequest(BaseModel):
+#     email: str
+#     token: str

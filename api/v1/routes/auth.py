@@ -3,11 +3,13 @@ from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from sqlalchemy import select
+from pydantic import EmailStr
+import random
 
 
 from core.config.settings import settings
 from api.utils import email_utils
-from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token
+from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token, PasswordResetRequest, PasswordResetVerify
 from api.v1.services import auth as user_service
 from api.db.session import get_db
 from api.utils.auth import create_access_token, validate_password, validate_email_format, verify_password 
@@ -125,3 +127,102 @@ async def logout(response: Response, request: Request):
     await user_service.blacklist_token(token)
     response.delete_cookie("access_token")
     return {"detail": "Logged out successfully"}
+
+
+@auth.post("/forgot-password")
+async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
+    user = user_service.get_user_by_email(data.email, db)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    token = str(random.randint(100000, 999999))
+    await user_service.store_token(data.email, token)
+
+    subject = "Password Reset Request"
+    content = f"Your password reset token is: {token}. It is valid for 10 minutes."
+
+    try:
+        email_utils.send_email_reminder(
+            to_email=data.email,
+            subject=subject,
+            content=content
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+    return {"msg": "Password reset token sent to your email"}
+
+
+@auth.post("/reset-password")
+async def reset_password(data: PasswordResetVerify, db: Session = Depends(get_db)):
+    email = await user_service.verify_token(data.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user = await user_service.get_user_by_email(email, db)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await user_service.update_user_password(user, data.new_password, db)
+    await user_service.delete_token(data.token)
+
+    return {"msg": "Password reset successfully"}
+
+
+
+
+
+
+
+# @auth.post("/signup", response_model=UserResponse)
+# async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+#     validate_password(user_data.password)
+#     validate_email_format(user_data.email)
+
+#     existing_user = await user_service.get_user_by_email(user_data.email, db)
+#     if existing_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+
+#     if len(user_data.password) < 8:
+#         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+
+#     hashed_password = user_service.hash_password(user_data.password)
+#     user_data.password = hashed_password
+
+#     try:
+#         await user_service.create_user(db, user_data)
+#     except ValueError as e:
+#         raise HTTPException(status_code=400, detail=str(e))
+
+#     token = str(random.randint(100000, 999999))
+
+#     await user_service.store_token(user_data.email, token, expiry=600)
+
+#     try:
+#         email_utils.send_email_reminder(
+#             to_email=user_data.email,
+#             subject="Verify your email",
+#             content=f"Your verification code is: {token}"
+#         )
+#     except Exception:
+#         raise HTTPException(status_code=500, detail="Failed to send verification email")
+
+#     return JSONResponse(status_code=200, content={"message": "Verification code sent to email"})
+
+
+
+# @auth.post("/verify")
+# async def verify_email(data: EmailVerificationRequest, db: Session = Depends(get_db)):
+#     stored_email = await user_service.verify_token(data.token)
+
+#     if stored_email != data.email:
+#         raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+#     try:
+#         await user_service.verify_user_email(data.email, db)
+#     except ValueError:
+#         raise HTTPException(status_code=400, detail="Email not found")
+
+#     await user_service.delete_token(data.token)
+
+#     return JSONResponse(status_code=200, content={"message": "Email verified successfully"})
