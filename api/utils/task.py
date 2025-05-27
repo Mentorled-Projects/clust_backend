@@ -1,10 +1,11 @@
 from celery import Celery
 from api.utils.email_utils import send_email_reminder
+from core.config.settings import settings
 
 celery = Celery(
     "tasks",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0"
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.CELERY_RESULT_BACKEND
 )
 
 @celery.task
