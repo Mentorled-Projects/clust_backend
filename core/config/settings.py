@@ -33,10 +33,18 @@ class Settings(BaseSettings):
     MAIL_FROM_NAME: Optional[str] = None
 
     VERIFICATION_BASE_URL: Optional[str] = None
+
+    REDIS_HOST: str 
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_RESPONSE: bool = True
+
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
     
 
     model_config = SettingsConfigDict(
-        env_file="/home/codenamemomi/projects/clust_backend/.env",
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
