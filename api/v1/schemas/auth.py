@@ -60,6 +60,10 @@ class PasswordResetVerify(BaseModel):
         return values
     
 
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 # class EmailVerificationRequest(BaseModel):
 #     email: str
 #     token: str
