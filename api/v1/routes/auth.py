@@ -9,7 +9,7 @@ import random
 
 from core.config.settings import settings
 from api.utils import email_utils
-from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token, PasswordResetRequest, PasswordResetVerify
+from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token, PasswordResetRequest, PasswordResetVerify, ResendVerificationRequest
 from api.v1.services import auth as user_service
 from api.db.session import get_db
 from api.utils.auth import create_access_token, validate_password, validate_email_format, verify_password 
@@ -73,7 +73,11 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
 
 
 @auth.post("/resend-verification")
-async def resend_verification_email(email: EmailStr, db: Session = Depends(get_db)):
+async def resend_verification_email(
+    payload: ResendVerificationRequest,
+    db: Session = Depends(get_db)
+):
+    email = payload.email
     user = await user_service.get_user_by_email(email, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
