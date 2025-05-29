@@ -48,6 +48,9 @@ class LogoutRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
+
+class TokenVerifyRequest(BaseModel):
+    token: str
 class PasswordResetVerify(BaseModel):
     token: str
     new_password: str

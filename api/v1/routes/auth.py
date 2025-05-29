@@ -10,7 +10,7 @@ from fastapi import BackgroundTasks
 
 from core.config.settings import settings
 from api.utils import email_utils
-from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token, PasswordResetRequest, PasswordResetVerify, ResendVerificationRequest
+from api.v1.schemas.auth import UserCreate, UserResponse, LoginRequest, Token, PasswordResetRequest, PasswordResetVerify, ResendVerificationRequest, TokenVerifyRequest
 from api.v1.services import auth as user_service
 from api.db.session import get_db
 from api.utils.auth import create_access_token, validate_password, validate_email_format, verify_password 
@@ -41,35 +41,50 @@ async def signup(user_data: UserCreate, background_tasks: BackgroundTasks, db: S
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    token = serializer.dumps(user_data.email)
-    verification_link = f"{settings.VERIFICATION_BASE_URL}/user/verify/{token}"
+    token = str(random.randint(10000, 99999))
+    await user_service.store_token(user_data.email, token)
 
+    # Email content
+    subject = "Verify Your Email Address"
+    html_content = f"""
+    <html>
+        <body>
+            <h2>Email Verification</h2>
+            <p>Use the following verification code to activate your account:</p>
+            <h3 style="color: #007BFF;">{token}</h3>
+            <p>This code is valid for 10 minutes.</p>
+        </body>
+    </html>
+    """
+
+    # Send email in background
     background_tasks.add_task(
         email_utils.send_email_reminder,
         to_email=user_data.email,
-        subject="Verify your email",
-        content=f"Click the link to verify your email: {verification_link}"
+        subject=subject,
+        content=html_content
     )
 
-    return JSONResponse(status_code=200, content={"message": "Verification email sent"})
+    return JSONResponse(status_code=200, content={"message": "Verification code sent to your email"})
 
 
-@auth.get("/verify/{token}")
-async def verify_email(token: str, db: Session = Depends(get_db)):
-    try:
-        email = serializer.loads(token, max_age=3600)
-    except SignatureExpired:
-        return JSONResponse(status_code=400, content={"message": "Token expired"})
-    except BadSignature:
-        return JSONResponse(status_code=400, content={"message": "Invalid token"})
+@auth.post("/verify-email")
+async def verify_email(data: TokenVerifyRequest, db: Session = Depends(get_db)):
+    email = await user_service.verify_token(data.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-    try:
-        await user_service.verify_user_email(email, db)
-    except ValueError:
-        return JSONResponse(status_code=400, content={"message": "Email not found"})
+    user = await user_service.get_user_by_email(email, db)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    db.commit()
-    return JSONResponse(status_code=200, content={"message": "Email verified successfully"})
+    if user.is_verified:
+        return {"msg": "Email already verified"}
+
+    await user_service.verify_user_email(user, db)
+    await user_service.delete_token(data.token)
+
+    return {"msg": "Email verified successfully"}
 
 
 @auth.post("/resend-verification")
@@ -89,14 +104,28 @@ async def resend_verification_email(
     token = serializer.dumps(user.email)
     verification_link = f"{settings.VERIFICATION_BASE_URL}/user/verify/{token}"
 
+    html_content = f"""
+    <html>
+        <body>
+            <h2>Verify Your Email</h2>
+            <p>Click the link below to verify your email address:</p>
+            <a href="{verification_link}" style="padding: 10px 15px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px;">
+                Verify Email
+            </a>
+            <p>If you didn't request this, you can safely ignore it.</p>
+        </body>
+    </html>
+    """
+
     background_tasks.add_task(
         email_utils.send_email_reminder,
         to_email=user.email,
         subject="Verify your email",
-        content=f"Click the link to verify your email: {verification_link}"
+        content=html_content
     )
 
     return JSONResponse(status_code=200, content={"message": "Verification email resent"})
+
 
 @auth.post("/login")
 async def login(response: Response, user_data: LoginRequest, db: Session = Depends(get_db)):
@@ -161,17 +190,27 @@ async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    token = str(random.randint(100000, 999999))
+    token = str(random.randint(10000, 99999))
     await user_service.store_token(data.email, token)
 
     subject = "Password Reset Request"
-    content = f"Your password reset token is: {token}. It is valid for 10 minutes."
+    html_content = f"""
+    <html>
+        <body>
+            <h2>Password Reset</h2>
+            <p>You requested to reset your password. Use the token below to proceed:</p>
+            <h3 style="color: #007BFF;">{token}</h3>
+            <p>This token is valid for 10 minutes.</p>
+            <p>If you did not request this, please ignore this email.</p>
+        </body>
+    </html>
+    """
 
     try:
         email_utils.send_email_reminder(
             to_email=data.email,
             subject=subject,
-            content=content
+            content=html_content
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")

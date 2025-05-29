@@ -17,7 +17,6 @@ from api.utils.token import oauth2_scheme
 from api.v1.schemas.auth import UserCreate
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 r = redis.Redis(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
@@ -85,14 +84,12 @@ async def create_user(db: AsyncSession, schemas: UserCreate) -> User:
     await db.refresh(new_user)
     return new_user
 
-async def verify_user_email(email: str, db: AsyncSession):
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalar_one_or_none()
-
+async def verify_user_email(user: User, db: AsyncSession):
     if not user:
         raise ValueError("User not found")
 
     user.is_verified = True
+    db.add(user)
     await db.commit()
     await db.refresh(user)
     return user

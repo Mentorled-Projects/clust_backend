@@ -5,7 +5,7 @@ from api.v1.models.user import User
 from api.v1.schemas.auth import UserResponse
 from api.v1.services import auth as user_service
 from api.db.session import get_db
-from api.v1.services.auth import get_current_user, pwd_context
+from api.v1.services.auth import get_current_user
 from api.v1.schemas.auth import UserUpdate
 
 user = APIRouter(prefix="/user", tags=["Users"])
