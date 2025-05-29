@@ -52,6 +52,8 @@ async def signup(user_data: UserCreate, background_tasks: BackgroundTasks, db: S
     )
 
     return JSONResponse(status_code=200, content={"message": "Verification email sent"})
+
+
 @auth.get("/verify/{token}")
 async def verify_email(token: str, db: Session = Depends(get_db)):
     try:
