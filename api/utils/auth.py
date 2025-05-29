@@ -1,14 +1,12 @@
-from passlib.context import CryptContext
 import re
 from fastapi import HTTPException, status
 from email_validator import validate_email, EmailNotValidError
 from jose import jwt
 from core.config.settings import settings
 from datetime import datetime, timedelta
-from api.utils.token import serializer
+from api.utils.token import serializer, pwd
 
 
-pwd= CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_passsword(password:str) -> str:
     return pwd.hash(password)
