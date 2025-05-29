@@ -5,6 +5,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from sqlalchemy import select
 from pydantic import EmailStr
 import random
+from fastapi import BackgroundTasks
 
 
 from core.config.settings import settings
@@ -21,7 +22,7 @@ auth = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @auth.post("/signup", response_model=UserResponse)
-async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+async def signup(user_data: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     validate_password(user_data.password)
     validate_email_format(user_data.email)
 
@@ -43,17 +44,14 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     token = serializer.dumps(user_data.email)
     verification_link = f"{settings.VERIFICATION_BASE_URL}/user/verify/{token}"
 
-    try:
-        email_utils.send_email_reminder(
-            to_email=user_data.email,
-            subject="Verify your email",
-            content=f"Click the link to verify your email: {verification_link}"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to send verification email")
+    background_tasks.add_task(
+        email_utils.send_email_reminder,
+        to_email=user_data.email,
+        subject="Verify your email",
+        content=f"Click the link to verify your email: {verification_link}"
+    )
 
     return JSONResponse(status_code=200, content={"message": "Verification email sent"})
-
 @auth.get("/verify/{token}")
 async def verify_email(token: str, db: Session = Depends(get_db)):
     try:
@@ -75,6 +73,7 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
 @auth.post("/resend-verification")
 async def resend_verification_email(
     payload: ResendVerificationRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     email = payload.email
@@ -88,17 +87,14 @@ async def resend_verification_email(
     token = serializer.dumps(user.email)
     verification_link = f"{settings.VERIFICATION_BASE_URL}/user/verify/{token}"
 
-    try:
-        email_utils.send_email_reminder(
-            to_email=user.email,
-            subject="Verify your email",
-            content=f"Click the link to verify your email: {verification_link}"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send verification email: {str(e)}")
+    background_tasks.add_task(
+        email_utils.send_email_reminder,
+        to_email=user.email,
+        subject="Verify your email",
+        content=f"Click the link to verify your email: {verification_link}"
+    )
 
     return JSONResponse(status_code=200, content={"message": "Verification email resent"})
-
 
 @auth.post("/login")
 async def login(response: Response, user_data: LoginRequest, db: Session = Depends(get_db)):
