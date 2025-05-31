@@ -45,6 +45,54 @@ Clust API is a backend service built with FastAPI that provides an event and gro
    alembic upgrade head
    ```
 
+### Database Migrations with Alembic
+
+This project uses Alembic to manage database schema migrations. Alembic is configured to use the database URL from the environment variables defined in your `.env` file.
+
+#### Setting up
+
+- Ensure your `.env` file contains the correct PostgreSQL connection details (`POSTGRES_SERVER`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`).
+- Alembic dynamically reads the database URL from the application settings and converts the asyncpg URL to a synchronous psycopg2 URL for migrations.
+
+#### Creating a new migration
+
+After making changes to your SQLAlchemy models, create a new migration script with:
+
+```bash
+alembic revision --autogenerate -m "describe your changes"
+```
+
+This command will generate a new migration file in the `alembic/versions` directory based on the differences detected in your models and the current database schema.
+
+#### Applying migrations
+
+To apply all pending migrations and update your database schema, run:
+
+```bash
+alembic upgrade head
+```
+
+#### Additional Alembic commands
+
+- To downgrade the database to a previous migration:
+
+  ```bash
+  alembic downgrade <revision>
+  ```
+
+- To view the current revision of the database:
+
+  ```bash
+  alembic current
+  ```
+
+- To show the history of migrations:
+
+  ```bash
+  alembic history
+  ```
+alembic revision --autogenerate -m "describe your changes"
+
 ## Usage
 
 Start the FastAPI application:
