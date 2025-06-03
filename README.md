@@ -134,7 +134,10 @@ The Clust API provides user authentication with email verification and JWT-based
   ```json
   {
     "email": "user@example.com",
-    "password": "StrongP@ssw0rd!"
+    "first_name": "Test",
+    "last_name": "User",
+    "password": "SecurePass123!",
+    "password_verify": "SecurePass123!"
   }
   ```
 * **Password Requirements**:
