@@ -57,7 +57,6 @@ async def signup(user_data: UserCreate, background_tasks: BackgroundTasks, db: S
     </html>
     """
 
-    # Send email in background
     background_tasks.add_task(
         email_utils.send_email_reminder,
         to_email=user_data.email,
@@ -101,17 +100,15 @@ async def resend_verification_email(
     if user.is_verified:
         return JSONResponse(status_code=200, content={"message": "Email already verified"})
 
-    token = serializer.dumps(user.email)
-    verification_link = f"{settings.VERIFICATION_BASE_URL}/user/verify/{token}"
+    token = str(random.randint(10000, 99999))
+    await user_service.store_token(user.email, token)
 
     html_content = f"""
     <html>
         <body>
             <h2>Verify Your Email</h2>
-            <p>Click the link below to verify your email address:</p>
-            <a href="{verification_link}" style="padding: 10px 15px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px;">
-                Verify Email
-            </a>
+            <p>Use the following verification code to verify your email address:</p>
+            <h3 style="font-size: 24px; color: #007BFF;">{token}</h3>
             <p>If you didn't request this, you can safely ignore it.</p>
         </body>
     </html>
@@ -120,7 +117,7 @@ async def resend_verification_email(
     background_tasks.add_task(
         email_utils.send_email_reminder,
         to_email=user.email,
-        subject="Verify your email",
+        subject="Your Verification Code",
         content=html_content
     )
 
