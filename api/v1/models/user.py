@@ -32,6 +32,7 @@ class User(BaseModel):
     feedbacks = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
     uploaded_files = relationship("File", back_populates="uploader", cascade="all, delete-orphan")
     member_groups = relationship("Group", secondary=group_members, back_populates="members")
+    messages_sent = relationship("Message", back_populates="sender", cascade="all, delete-orphan")
 
 
 
