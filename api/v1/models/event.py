@@ -8,8 +8,8 @@ class Event(BaseModel):
     title = Column(String, nullable=False)
     description = Column(Text)
     location = Column(String)
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=False)
     organizer_id = Column(ForeignKey("users.id"), nullable=False)
 
     organizer = relationship("User", back_populates="events")
