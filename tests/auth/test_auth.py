@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from main import app
 from api.v1.routes.auth import get_db
 
-@patch("api.utils.auth.verify_password", return_value=True)
+@patch("api.v1.routes.auth.verify_password", return_value=True)
 def test_login_success(
     mock_verify_password,
     client,
@@ -15,19 +15,23 @@ def test_login_success(
 ):
     # Override get_db dependency
     def override_get_db():
+        class DummyUser:
+            id = 1
+            first_name = "Test"
+            last_name = "User"
+            email = "test.user+unittest@test.com"
+            role = "user"
+            is_verified = True
+            password_hash = "$2b$12$KIXQJ1Q6Q6Q6Q6Q6Q6Q6QO6Q6Q6Q6Q6Q6Q6Q6Q6Q6Q6Q6Q6Q6Q6Q6"  # dummy bcrypt hash
+
+        class DummyResult:
+            def scalar_one_or_none(self):
+                return DummyUser()
+
         class DummySession:
             async def execute(self, stmt):
-                class DummyResult:
-                    def scalar_one_or_none(self):
-                        class DummyUser:
-                            id = 1
-                            first_name = "Test"
-                            last_name = "User"
-                            email = "test.user+unittest@test.com"
-                            role = "user"
-                            is_verified = True
-                        return DummyUser()
                 return DummyResult()
+
         return DummySession()
 
     app.dependency_overrides[get_db] = override_get_db
