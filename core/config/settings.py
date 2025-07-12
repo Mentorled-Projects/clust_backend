@@ -53,11 +53,11 @@ class Settings(BaseSettings):
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):
+        if not v:
+            return ["http://localhost:3000", "https://your-app.vercel.app"]
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list):
-            return v
-        raise ValueError(v)
+        return v
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
