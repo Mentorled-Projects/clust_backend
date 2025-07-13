@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, field_validator
 from typing import List, Optional, Union
 
 class Settings(BaseSettings):
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    BACKEND_CORS_ORIGINS: Union[str, List[str]] = []
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
     SMTP_SERVER: Optional[str] = None
     SMTP_PORT: Optional[int] = None
@@ -51,10 +51,9 @@ class Settings(BaseSettings):
     )
 
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v):
-        if not v:
-            return ["http://localhost:3000", "https://your-app.vercel.app"]
+    @field_validator("BACKEND_CORS_ORIGINS")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[AnyHttpUrl]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
         return v
