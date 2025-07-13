@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, validator
-from typing import List, Optional
+from typing import List, Optional, Union
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: Union[str, List[str]] = []
 
     SMTP_SERVER: Optional[str] = None
     SMTP_PORT: Optional[int] = None
