@@ -13,16 +13,19 @@ from typing import List
 class MessageService:
     @staticmethod
     async def send_message(group_id: UUID, user: User, data: MessageCreate, db: AsyncSession) -> Message:
-        # Get group and members
         result = await db.execute(
-            select(Group)
-            .options(selectinload(Group.members))
-            .where(Group.id == group_id)
+            select(Group).options(selectinload(Group.members)).where(Group.id == group_id)
         )
-        group = result.scalars().first()
+        group = result.scalar_one_or_none()
 
-        if not group or user not in group.members:
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        if user not in group.members:
             raise HTTPException(status_code=403, detail="You are not a member of this group.")
+
+        if not data.content.strip():
+            raise HTTPException(status_code=400, detail="Message content cannot be empty.")
 
         message = Message(
             content=data.content,
@@ -38,25 +41,24 @@ class MessageService:
             .options(selectinload(Message.sender))
             .where(Message.id == message.id)
         )
-        message_with_sender = result.scalar_one()
+        return result.scalar_one()
 
-        return message_with_sender
-    
-    
     @staticmethod
     async def get_group_messages(group_id: UUID, user: User, db: AsyncSession) -> List[Message]:
-        # Load group and members
         result = await db.execute(
             select(Group).options(selectinload(Group.members)).where(Group.id == group_id)
         )
         group = result.scalar_one_or_none()
 
-        if not group or user not in group.members:
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        if user not in group.members:
             raise HTTPException(status_code=403, detail="You are not a member of this group.")
 
         result = await db.execute(
             select(Message)
-            .options(selectinload(Message.sender))  
+            .options(selectinload(Message.sender))
             .where(Message.group_id == group_id)
             .order_by(Message.created_at)
         )

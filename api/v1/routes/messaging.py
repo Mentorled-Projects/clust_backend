@@ -19,7 +19,7 @@ async def send_message(
 ):
     return await MessageService.send_message(group_id, current_user, data, db)
 
-@message.get("/{group_id}/messages", response_model=List[MessageResponse])
+@message.post("/{group_id}/messages", response_model=MessageResponse)
 async def get_messages(
     group_id: UUID,
     db: AsyncSession = Depends(get_db),
