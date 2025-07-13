@@ -2,6 +2,17 @@
 
 Clust API is a backend service built with FastAPI that provides an event and group management platform. It supports user roles such as organizers and attendees, allowing users to create and manage groups, events, RSVPs, feedback, and file uploads.
 
+## Project Architecture
+
+- **FastAPI**: Web framework for building the API.
+- **PostgreSQL**: Asynchronous database backend using `asyncpg`.
+- **Alembic**: Database schema migrations.
+- **Redis**: Used for caching and Celery broker.
+- **Celery**: Task queue for background jobs.
+- **SendGrid**: Email delivery service.
+- **JWT**: JSON Web Tokens for authentication and authorization.
+- **Pytest & Pytest-Asyncio**: Testing framework for synchronous and asynchronous tests.
+
 ## Installation
 
 1. Clone the repository:
@@ -37,6 +48,12 @@ Clust API is a backend service built with FastAPI that provides an event and gro
    VERIFICATION_BASE_URL=http://localhost:8000
    ACCESS_TOKEN_EXPIRE_MINUTES=30
    ALGORITHM=HS256
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_DB=0
+   CELERY_BROKER_URL=redis://localhost:6379/0
+   CELERY_RESULT_BACKEND=redis://localhost:6379/0
+   SENDGRID_API_KEY=your_sendgrid_api_key
    ```
 
 5. Run database migrations using Alembic:
@@ -91,7 +108,6 @@ alembic upgrade head
   ```bash
   alembic history
   ```
-alembic revision --autogenerate -m "describe your changes"
 
 ## Usage
 
@@ -127,7 +143,7 @@ The Clust API provides user authentication with email verification and JWT-based
 
 ### Signup
 
-* **Endpoint**: `POST /user/signup`
+* **Endpoint**: `POST /api/v1/auth/signup`
 * **Description**: Register a new user with email and password. Sends a verification email with a token link.
 * **Request Body**:
 
@@ -155,7 +171,7 @@ The Clust API provides user authentication with email verification and JWT-based
 
 ### Email Verification
 
-* **Endpoint**: `GET /user/verify/{token}`
+* **Endpoint**: `GET /api/v1/auth/verify-email`
 * **Description**: Verify user email by clicking the link sent to the registered email. The token expires in 1 hour.
 * **Response**:
 
@@ -178,7 +194,7 @@ The Clust API provides user authentication with email verification and JWT-based
 
 ### Login
 
-* **Endpoint**: `POST /user/login`
+* **Endpoint**: `POST /api/v1/auth/login`
 * **Description**: Authenticate user with email and password. Requires verified email.
 * **Request Body**:
 
@@ -193,7 +209,10 @@ The Clust API provides user authentication with email verification and JWT-based
   * Success:
 
     ```json
-    { "message": "Login successful" }
+    {
+      "access_token": "jwt_token_here",
+      "token_type": "bearer"
+    }
     ```
   * Failure:
 
@@ -204,7 +223,6 @@ The Clust API provides user authentication with email verification and JWT-based
 
 * The API uses JWT tokens for authentication.
 * Tokens are created with expiration (default 30 minutes).
-* Token generation on login is planned (TODO).
 
 ## Data Models
 
@@ -240,9 +258,15 @@ User feedback related to events.
 
 Files uploaded by users related to events.
 
-## Database
+## Running Tests
 
-The project uses PostgreSQL as the database backend with asynchronous support via `asyncpg`. Database schema migrations are managed using Alembic.
+The project uses `pytest` and `pytest-asyncio` for testing.
+
+To run the tests, execute:
+
+```bash
+pytest
+```
 
 ## Configuration
 
@@ -255,6 +279,9 @@ Configuration is managed via environment variables and the `.env` file. Key sett
 * `VERIFICATION_BASE_URL`: Base URL used in email verification links
 * `ACCESS_TOKEN_EXPIRE_MINUTES`: JWT token expiration time in minutes
 * `ALGORITHM`: JWT signing algorithm
+* `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`: Redis connection details
+* `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`: Celery configuration
+* `SENDGRID_API_KEY`: API key for SendGrid email service
 
 ## License
 

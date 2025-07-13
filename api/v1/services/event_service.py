@@ -7,6 +7,7 @@ from typing import List
 from api.v1.models.event import Event
 from api.v1.models.user import User
 from api.v1.schemas.event import EventCreate
+from api.v1.schemas.common import MessageResponse
 
 
 class EventService:
@@ -62,13 +63,15 @@ class EventService:
         return event
 
 
-    @staticmethod
-    async def delete_event(event_id: UUID, user: User, db: AsyncSession):
-        event = await db.get(Event, event_id)
-        if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
-        if event.organizer_id != user.id:
-            raise HTTPException(status_code=403, detail="Not authorized")
-        await db.delete(event)
-        await db.commit()
-        return {"detail": "Event deleted"}
+@staticmethod
+async def delete_event(event_id: UUID, user: User, db: AsyncSession) -> MessageResponse:
+    event = await db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    await db.delete(event)
+    await db.commit()
+
+    return MessageResponse(message="Event deleted")

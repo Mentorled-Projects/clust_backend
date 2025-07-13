@@ -17,11 +17,10 @@ class RSVPCreate(BaseModel):
 
 class RSVPResponse(BaseModel):
     id: UUID
-    event_id: UUID
     user_id: UUID
+    event_id: UUID
     status: RSVPStatus
     created_at: datetime
-    updated_at: datetime
 
     class Config:
         orm_mode = True

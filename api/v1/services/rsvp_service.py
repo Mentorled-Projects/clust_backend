@@ -47,7 +47,14 @@ class RSVPService:
         return new_rsvp
 
     @staticmethod
-    async def get_event_rsvps(event_id: UUID, db: AsyncSession):
+    async def get_event_rsvps(event_id: UUID, db: AsyncSession, current_user: User):
+        event = await db.get(Event, event_id)
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        if event.organizer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You are not authorized to view RSVPs for this event")
+
         result = await db.execute(
             select(RSVP)
             .options(selectinload(RSVP.user), selectinload(RSVP.event))
@@ -63,4 +70,3 @@ class RSVPService:
             .where(RSVP.user_id == user.id)
         )
         return result.scalars().all()
-

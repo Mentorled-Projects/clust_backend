@@ -10,6 +10,7 @@ from api.v1.schemas.group import (
 from api.v1.services.group_service import GroupService
 from api.v1.services.auth import get_db, get_current_user
 from api.v1.models.user import User
+from api.v1.schemas.common import MessageResponse
 from uuid import UUID
 from typing import List
 
@@ -25,7 +26,7 @@ async def create_group(
     return await GroupService.create_group(data, current_user, db)
 
 
-@group.post("/{group_id}/join", response_model=JoinGroupResponse)
+@group.post("/{group_id}/join", response_model=MessageResponse)
 async def join_group(
     group_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -59,7 +60,7 @@ async def get_my_groups(
     return await GroupService.get_my_groups(current_user, db)
 
 
-@group.post("/{group_id}/leave")
+@group.post("/{group_id}/leave", response_model=MessageResponse)
 async def leave_group(
     group_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -68,7 +69,7 @@ async def leave_group(
     return await GroupService.leave_group(group_id, current_user, db)
 
 
-@group.delete("/{group_id}/members/{user_id}")
+@group.delete("/{group_id}/members/{user_id}", response_model=MessageResponse)
 async def remove_member(
     group_id: UUID,
     user_id: UUID,
