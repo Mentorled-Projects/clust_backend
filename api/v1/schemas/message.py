@@ -19,11 +19,9 @@ class SenderResponse(BaseModel):
 class MessageResponse(BaseModel):
     id: UUID
     content: str
-    sender: SenderResponse
     sender_id: UUID
     group_id: UUID
     created_at: datetime
 
     class Config:
         orm_mode = True
-

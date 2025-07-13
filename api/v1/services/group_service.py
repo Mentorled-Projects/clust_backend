@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from api.v1.models.group import Group
 from api.v1.models.user import User
 from api.v1.schemas.group import GroupCreate
+from api.v1.schemas.common import MessageResponse
 from uuid import UUID
 from fastapi import HTTPException, status
 from typing import List
@@ -44,7 +45,7 @@ class GroupService:
 
         group.members.append(user)
         await db.commit()
-        return {"message": "Joined group successfully"}
+        return MessageResponse(message="Joined group successfully")
     
 
     @staticmethod
@@ -77,7 +78,7 @@ class GroupService:
 
         group.members.remove(user)
         await db.commit()
-        return {"message": "You have left the group"}
+        return MessageResponse(message="You have left the group")
 
     @staticmethod
     async def remove_member(group_id: UUID, target_user_id: UUID, current_user: User, db: AsyncSession):
@@ -97,4 +98,5 @@ class GroupService:
 
         group.members.remove(target_user)
         await db.commit()
-        return {"message": f"{target_user.first_name} has been removed from the group"}
+        return MessageResponse(message=f"{target_user.first_name} has been removed from the group")
+

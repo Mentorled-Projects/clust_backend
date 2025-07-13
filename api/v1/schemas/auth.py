@@ -1,7 +1,7 @@
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, model_validator, ValidationError
 from typing import Optional
-
+from typing import Literal
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -37,6 +37,20 @@ class UserUpdate(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class UserInfo(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    email: EmailStr
+    role: str
+    is_verified: bool
+    
+class LoginResponse(BaseModel):
+    message: str
+    access_token: str
+    token_type: Literal["bearer"]
+    user: UserInfo
 
 class Token(BaseModel):
     access_token: str
