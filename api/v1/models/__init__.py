@@ -6,4 +6,6 @@ from api.v1.models.group import Group
 from api.v1.models.feedback import Feedback
 from api.v1.models.file import File
 from api.v1.models.message import Message
+from api.v1.models.category import Category
+from api.v1.models.ticket import Ticket
 

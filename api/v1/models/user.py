@@ -5,6 +5,7 @@ from sqlalchemy.types import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 from api.v1 import models
 from api.v1.models.group import group_members
+from api.v1.models.category import user_categories
 
 
 
@@ -33,6 +34,7 @@ class User(BaseModel):
     uploaded_files = relationship("File", back_populates="uploader", cascade="all, delete-orphan")
     member_groups = relationship("Group", secondary=group_members, back_populates="members")
     messages_sent = relationship("Message", back_populates="sender", cascade="all, delete-orphan")
+    categories = relationship("Category", secondary=user_categories, back_populates="users")
 
 
 
